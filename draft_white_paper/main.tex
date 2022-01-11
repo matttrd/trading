@@ -1,0 +1,132 @@
+\documentclass{article}[10pt]
+% import packages and define commands
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{cleveref}
+
+% info
+\title{\textbf{\Huge Trading System}}
+\author{Matteo Terzi}
+\date{}
+
+\newcommand{\F}{\mathcal{F}}
+\DeclareMathOperator{\sign}{sign}
+
+% document
+\begin{document}
+
+\maketitle 
+\tableofcontents
+
+\section{Introduction}
+
+\section{Framework}
+
+There are four main parts:
+\begin{itemize}
+	\item pattern recognition
+	\item strategy builder
+	\item strategy and transaction optimization 
+	\item risk management
+\end{itemize}
+
+
+\subsection{Pattern Recognition}
+
+This phase has the role of finding the patterns in the indices, stocks, multi-stocks, which describe the inefficiencies of the markets. 
+The discovered patterns have to be robust. This allows being more confident that the strategies will be profitable. 
+
+The core of our idea is that most of the published ML-based frameworks for trading are wrong, basically, for two reasons. The first is that it is an ill-posed problem: usually, the strategies are not explicit, but they rely on Buy, Sell, Do Nothing.
+Thus, at each instant, the model has to choose to do something. However, this is conceptually silly as the model should not do anything most of the time. Thus the problem is imbalanced and carries all the disadvantages of imbalanced problems. 
+Even if we fix the imbalance, the algorithm will be highly inefficient as the number of transactions will be very high. This is a substantial bottleneck in practice. The literature often considers unrealistic commission costs (unless you are a huge hedge fund). Moreover, live trading has many subtle costs (slippage, etc.), which further increases commissions. 
+ This makes all the high performance of ML algorithms unrealistic (in fact, it is not clear why one should publish a paper that shows a 90\% annual margin and not invests their own money secretly....).
+ 
+ The second problem is that strategies are not explainable. A big black-box model is, per se, unexplainable. Moreover, no one would query this model every step without knowing how it works.
+ 
+ 
+Our idea is to find patterns independent of a prediction for the next time instants. In contrast, we aim at discovering complex or straightforward "rules". For example, on Monday, this share price rises if Friday the close was under the opening. 
+ 
+ Once these rules are found, it is almost straightforward to develop a good strategy. Moreover, a sound trading system should be based on operational filters: a strategy should be active only where the market is in the condition experimented in the past. For example, if one strategy is based on valid patterns in high-volatility regimes, it should be active when the market is calm.
+ A black-box model would have difficulty handling this case unless we make it even more complex. However, since high volatility is rare by nature, building a model which is simultaneously good in all the conditions is again unrealistic. 
+ Instead, with patterns, things are much more accessible. Why? Because once a pattern is discovered, we learn the market conditions under the form of embeddings or states. Thus, each strategy will be represented by a triplet (state, pattern, strategy). The state is the market condition at which the pattern is operative, and strategy is the practical strategy based on the pattern.
+ The idea is to learn the state by building a classifier that can distinguish two different patterns using only the knowledge of market conditions. This phase is a sort of introspective procedure which makes a pattern aware of its state.
+ The risk and transaction costs management phase decides how the filters are built or tuned.
+ 
+ A filter is very useful when the strategy foresees a high number of trades. This, especially volatile market volatility, may compromise the real profits as the total commissions become overwhelming.
+ Thus, there are two families of filters to be considered:
+ \begin{itemize}
+    \item opening: they decide when to enter with a position. This is already implicitly taken into account in our model because when considering the market conditions. However, many refinements can be done, such as learning when is more profitable to enter. For example, suppose our strategy is based on the instrument's volatility as the "open range breakout" strategies. In this context, it is essential to enter only when it is worth it, and the volatility is high enough. Thus, we need a filter that tells us when the next bars will have enough volatility.
+    \item closing: they decide when to close the positions. For example, stopping losses is very important to protect our capital and smooth results. 
+ \end{itemize}
+ Moreover, as a by-product, using filters has a beneficial effect even if it does not work very well. Why? Because more capital is not locked and thus, it is available for other strategies that can be more profitable.
+ 
+ In a regime where money is not enough (which will be hard to reach but never say never), the systems based on these filters should decide which strategy is more profitable, discarding not very performative trades. In any case, if we have many strategies, at least with cryptocurrencies, we can downsize all the positions and increase the leverage in order to deal with less capital.
+ 
+  
+ 
+
+ \subsection{Strategy Builder}
+ This phase has the objective of creating a real strategy. For example, to decide to use limits buy, market buys, etc.
+ In other words, this part should tune all the details that are independent of the pattern but are more related to the execution. For example, if the Crude Oil market closes at 5-6 p.m., one should place orders accordingly. 
+ The perfect way to conduct this phase is semi-automatically. A basic template will be constructed and then refined with the user's experience. This allows to double-check and avoid inconveniences given by details (here details are everything).
+ 
+ \subsection{Optimisation of execution}
+ This phase has the role of optimizing the executions. 
+ For example, deciding if a buy is worth given the current slippage and other transaction costs. Moreover, if more strategies are operative in the same market, there may be a margin of optimization. For example, if strategy A wants to buy X at quantity P, and strategy B wants to sell X at the same quantity, one could "buy to cover".
+ 
+Another example is to decide to change the selling or buying price based on the order book or based on how it is necessary to finalize the operation (e.g., we have to close our positions to avoid going overnight).
+
+This part is very complex but not less important. Actually, optimizing the executions with few and profitable strategies will not lead to dramatic advantage. However, as soon as we rely on weak strategies (the ones that exploit minimal correlations), this part becomes dominant. For example, Rentech is known to be the best to handle this phase. The importance arises because the costs cover the small margin given by the strategy. 
+  
+\subsection{Risk management}
+This part is the crucial part of the trading system. It has the objective of managing the risk of the strategies by deciding how money is allocated.
+The strategy choose when to buy but not how much. This depends on many factors: the capital, the number of independent strategies, the leverage, the maximum drawdown, etc.
+
+This module has to decide how much capital is allocated for an operation at every instant. For example, if a pattern is very robust, then we can reserve more capital and higher leverage than a weak strategy. However, this module should also depend on real-time conditions. For example, if a strategy operates differently from expectations, the system should be more cautious and reserve a lesser capital. Moreover, the risk of a strategy is connected to the risk of others. If we rely on $100$ strategies where each is correlated $0.5$ with the other, then the adequate number of strategies is slightly more than $50$. This means the actual risk is twice that expected.
+    When the effective number of strategies is very high, theoretically, one can use infinite leverage (of course, this is not feasible in practice).
+Thus, good risk management requires estimating how strategies are correlated to decide how much capital and leverage is to be applied.
+ Regarding risk management, finding patterns makes the system intrinsically more resilient to market correlations, etc. This means that once one has sufficient strategies working on a sufficiently large number of conditions and markets, there is no need for hedging because strategies automatically hedge each other.
+  
+  
+ \subsection{Double back-test}
+Usually, strategies are back-tested to verify their profitability. Here we can do more: back-test patterns and back-test strategies. This allows decoupling the part of algorithmic execution and pattern discovery.
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+
+
+\section{One big model}
+We believe that using one big model is beneficial for several reasons:
+\begin{itemize}
+    \item if you have a lot of data for other markets, but you have little data for a new market, you could apply a sort of "transfer learning" by discovering similar patterns
+    \item you can add signals more easily
+    \item the core is the same, so if something does not work, most likely something else does not work. 
+\end{itemize}
+
+The inputs to the model are the data (ticks, news, etc.) and the parameters, constraints, etc. If you want to risk less, the model must adapt immediately to the new condition.
+
+The main principle is that the model has to adapt to the market conditions automatically. 
+This means that if the pattern A was discovered at a specific market condition $E_A$ when the market is doing something different, the model should automatically decrease the positions of strategy A.
+For example, suppose that all the strategies are based on low-volatile conditions. When the market increases the volatility, the model has to reduce the positions proportionally. Then, if the model is still performing well, it is possible to continue to trade the strategies and update the market conditions that are valid for pattern A.
+
+In summary the input variables to risk management module are:
+\begin{itemize}
+    \item $\bf{N_S}$: effective number of strategies (effective sample size)
+    \item ${\bf L}$: liquidity
+    \item ${\bf C}$: capital
+    \item ${\bf R}:$ accepted risk (in terms of drawdown)
+    \item ${\bf S_r}$: robustness of the strategy S
+    \item ${\bf S_s}$: strength of the strategy S 
+\end{itemize}
+
+A strategy has two main factors: robustness and strength.
+Robustness is the (expected) fraction of the times in which the strategy is profitable.
+The strength tells how much the strategy is profitable on average.
+
+These two factors are complementary: we can have a very profitable strategy that is not robust or very robust but not very profitable.
+Intuitively, high robustness means high leverage because the chance that the drawdown will be severe is very low.
+Instead, drawdown may be high even if a strategy is very profitable but not robust.
+Thus, the general principle is to leverage very robust strategies to make them profitable and reduce the size of the bet with not robust strategies.
+
+\end{document}
