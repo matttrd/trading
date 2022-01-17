@@ -46,6 +46,8 @@ def main():
     # dfs_dollar = get_dollar_bars(files, threshold=3.654307e+07)
     # dfs_dollar = get_dollar_bars(files, threshold=1e+06, start_date='2018-07-01', end_date='2018-08-01')
     dfs_time = get_time_bars(files, resolution='1T', start_date='2018-07-01', end_date='2018-08-01')#, batch_size=10000)
+    embed()
+
     # dfs_time.index = dfs_time.index.round('1H')
 
     # from trading.labeling.triple_barrier import get_events, get_bins
@@ -60,7 +62,6 @@ def main():
     # t1    = add_vertical_barrier(close.index, close, num_days=3, num_hours=0, num_minutes=0, num_seconds=0)
     out   = get_events(close,close.index,[0.05, 0.05],trgt,0.01,1, t1=None)
 
-    embed()
 
 
 if __name__ == "__main__":

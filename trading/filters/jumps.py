@@ -107,6 +107,7 @@ def neg_jumps(time_series, win_len, threshold, perc, derivative, soft=False):
     return out
 
 def detect_jumps(time_series_df, win_len, threshold, perc, derivative=False, pos=True, soft=False):
+    time_series = time_series_df.values
     if pos:
         out = pos_jumps(time_series, win_len, threshold, perc, derivative=derivative, soft=soft)
     else:   
